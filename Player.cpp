@@ -1,14 +1,31 @@
 #include "Player.hpp"
+#include "Model.hpp"
+
 #include <cstdlib>
 #include <iostream>
+#include <vector>
+#include <tuple>
+
 
 namespace ducks
 {
-
+int n, m;
 Player::Player()
 {
-    // Initialize model?
+    n = 6; // state: type of birds
+    m = 9; // emission: type of moves
 }
+
+std::vector<int> getObsSeq(Bird bird) {
+        std::vector<int> O(bird.getSeqLength());
+
+        for (int i = 0; i < bird.getSeqLength(); i++)
+        {
+            O[i] = bird.wasAlive(i) ? bird.getObservation(i) : 0; // check later...
+        }
+
+        return O;
+    }
 
 Action Player::shoot(const GameState &pState, const Deadline &pDue)
 {
@@ -24,37 +41,38 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
     // Will get max 100 observations from each bird (1 for each timestep in round)
     // unless bird is dead, then don't calculate anything
     
-    // Keep learning in each round ? Prob not possible
 
     int nBirds = pState.getNumBirds();
-    int openSeason = 100 - (nBirds + 10);
+    int openSeason = 100 - (nBirds + 1);
 
     // For each bird
+    int victim = -1;
+    double victimOdds = 0.75;
+    int nextBirdMove = -1;
     for (int b = 0; b < nBirds; b++)
     {
         Bird bird = pState.getBird(b);
         int nObs = bird.getSeqLength();
-
-        // This bird is alive and it's openSeason => run the model!
         if (nObs >= openSeason && bird.isAlive())
         {
-            // (1) Initialize model
-            
+            Model model(n, m);
+            model.estimate(getObsSeq(bird));
+            vector<int> stateSeq = model.estimateStateSeq(getObsSeq(bird));
+            tuple<double, int> action = model.getNextEmission(stateSeq[stateSeq.size() - 1]);
+            if (get<0>(action) >= victimOdds) {
+                victimOdds = get<0>(action);
+                victim = b;
+                nextBirdMove = get<1>(action);
+            }
         }
-                
     }
-    
-    /*
-     * Here you should write your clever algorithms to get the best action.
-     * This skeleton never shoots.
-     */
-    
 
-    // This line choose not to shoot
-    //return cDontShoot;
+    if (victim == -1 && nextBirdMove == -1) {
+        //std::cerr << "no shoot, becauae bad prediction" << endl;
+    }
 
-    //This line would predict that bird 0 will move right and shoot at it
-    return Action(0, MOVE_RIGHT);
+    //std::cerr << "Round: " << pState.getRound() << " action " << EMovement(nextBirdMove) << " victim " << victim <<endl;
+    return Action(victim, EMovement(nextBirdMove));
 }
 
 std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDue)
