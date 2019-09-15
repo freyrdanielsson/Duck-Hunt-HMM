@@ -1,10 +1,21 @@
+#include "Model.hpp"
+
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
 int main()
 {
-    double a = 1.0;
-    a /= 2.0;
-    cout << a << endl;
+    ducks::Model model = ducks::Model(5,5);
+    vector<vector <double>> A = model.getA();
+
+    for (int i = 0; i < 5; i++)
+    {
+        for (int j = 0; j < 5; j++)
+        {
+            cout << A[i][j] << " ";
+        }
+        cout<<endl;
+    }
 }
