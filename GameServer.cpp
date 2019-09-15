@@ -314,6 +314,7 @@ void GameServer::playerShoot(SPlayer &pPlayer)
         }
         else
         {
+            *pPlayer.mOutputStream << "MISS" << std::endl;
             pPlayer.mScore -= 1;
         }
     }

@@ -190,6 +190,11 @@ bool Client::processMessage()
             std::cerr << "Received GAMEOVER from server" << std::endl;
         return false;
     }
+    else if (lMessageType == "MISS")
+    {
+        std::cerr << "MISS" << std::endl;
+    }
+    
     else
     {
         throw std::runtime_error("Failed to parse message in readMessage:\n" + lString);
