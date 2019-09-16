@@ -188,11 +188,15 @@ bool Client::processMessage()
     {
         if (gVerbose)
             std::cerr << "Received GAMEOVER from server" << std::endl;
-        return false;
+        // return false;
     }
     else if (lMessageType == "MISS")
     {
         std::cerr << "MISS" << std::endl;
+    }
+    else if (lMessageType == "HIT_STORK")
+    {
+        std::cerr << "HIT STORK BASTARD" << std::endl;
     }
     
     else
