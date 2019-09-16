@@ -250,8 +250,8 @@ public:
 
     tuple<double, int> getNextEmission(int state) const
     {
-        vector<double> stateDist = A[state];
         vector<double> emissionProb(m);
+        /* vector<double> stateDist = A[state];
         for (int i = 0; i < n; i++)
         {
             for (int j = 0; j < n; j++)
@@ -261,7 +261,16 @@ public:
                     emissionProb[k] += A[j][i] * B[i][k] * stateDist[j];
                 }
             }
-        }
+        } */
+
+        vector<double> stateDist = A[state];
+        for (int i = 0; i < n; i++)
+        {
+            for (int k = 0; k < m; k++)
+            {
+                emissionProb[k] += A[state][i] * B[i][k] * Alpha[state][l - 1];
+            }
+    }
 
         double max = 0;
         int emission = -1;
