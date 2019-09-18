@@ -178,6 +178,43 @@ public:
         }
     }
 
+    double estimateEmissionSequence(vector<int> &pO)
+    {
+
+        vector<double> Alphan(n);
+        for (int i = 0; i < n; i++)
+        {
+            Alphan[i] = Pi[i] * B[i][pO[0]];
+        }
+
+        vector<double> AlphanTmp(n);
+        for (int k = 1; k < pO.size(); k++)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                double tmp = 0;
+                for (int j = 0; j < n; j++)
+                {
+                    tmp += Alphan[j] * A[j][i];
+                }
+                AlphanTmp[i] = tmp * B[i][pO[k]];
+            }
+            for (int i = 0; i < n; i++)
+            {
+                Alphan[i] = AlphanTmp[i];
+            }
+        }
+
+        double marginalize = 0;
+        for (int i = 0; i < n; i++)
+        {
+            marginalize += Alphan[i];
+        }
+
+        //cerr << marginalize << endl;
+        return marginalize;
+    }
+
     /**
      * NOTE: Really just need the last state?
      * 
@@ -187,10 +224,12 @@ public:
      * @param O observation sequence
      * @return estimation of state sequence that produced the observation sequence
     */
-    vector<int> estimateStateSeq(vector<int> pO)
+    int estimateStateSeq(vector<int> &pO)
     {
-        O = pO;
-        l = O.size();
+
+        //Bætti við const og type a þessa linu bæbæ.
+
+        int l = pO.size();
         // initialize Delta[0]
         double max = 0;
         int argmax = -1;
@@ -198,9 +237,10 @@ public:
         vector<double> Delta(n);
         for (int i = 0; i < n; i++)
         {
-            Delta[i] = Pi[i] * B[i][O[0]];
+            Delta[i] = Pi[i] * B[i][pO[0]];
         }
 
+        double prob = 0;
         vector<double> DeltaTmp(n);
         vector<vector<int>> DeltaStates(n, vector<int>(l));
         for (int k = 1; k < l; k++)
@@ -211,9 +251,10 @@ public:
                 argmax = -1;
                 for (int j = 0; j < n; j++)
                 {
-                    if (max < Delta[j] * A[j][i] * B[i][O[k]])
+                    prob = abs(log(Delta[j] * A[j][i] * B[i][pO[k]]));
+                    if (max < prob && !isinf(prob)) // NOTE
                     {
-                        max = Delta[j] * A[j][i] * B[i][O[k]];
+                        max = prob;
                         argmax = j;
                     }
                 }
@@ -228,27 +269,30 @@ public:
 
         max = 0;
         argmax = -1;
+
         for (int i = 0; i < n; i++)
         {
-            if (max < Delta[i])
+            if (max <= Delta[i])
             {
                 max = Delta[i];
                 argmax = i; // Most likely current state (at t=T)
             }
         }
+        return argmax;
 
-        vector<int> path(O.size());
+        /* vector<int> path(pO.size());
         path[l - 1] = argmax;
+        cerr << "s "<< pO.size() << endl;
         for (int i = l - 1; i > 0; i--)
         {
             path[i - 1] = DeltaStates[argmax][i]; // Put most likely previous state in path
             argmax = DeltaStates[argmax][i];      // Go to most likely previous state
         }
 
-        return path;
+        return path; */
     }
 
-    tuple<double, int> getNextEmission(int state) const
+    tuple<double, int> getNextEmission(int &state)
     {
         vector<double> emissionProb(m);
         /* vector<double> stateDist = A[state];
@@ -263,14 +307,16 @@ public:
             }
         } */
 
-        vector<double> stateDist = A[state];
+        //vector<double> stateDist = A[state];
         for (int i = 0; i < n; i++)
         {
+            //cerr << "state: " << state << " A.size " << A.size() << endl;
             for (int k = 0; k < m; k++)
             {
-                emissionProb[k] += A[state][i] * B[i][k] * Alpha[state][l - 1];
+                //cerr << A[state][i] << " " << B[i][k] << " " << Alpha[state][O.size() - 1] << endl;
+                emissionProb[k] += A[state][i] * B[i][k] * Alpha[state][O.size() - 1];
             }
-    }
+        }
 
         double max = 0;
         int emission = -1;
@@ -288,17 +334,16 @@ public:
     /**
      * Baum-Welch Algorithm
      */
-    void estimate(vector<int> pO)
+    void estimate(vector<int> &pO)
     {
         O = pO;
-        l = O.size();
+        l = pO.size();
 
         C.resize(l);
         Alpha.resize(n, vector<double>(l));
         Beta.resize(n, vector<double>(l));
         diGamma.resize(n, vector<vector<double>>(n, vector<double>(l)));
         Gamma.resize(n, vector<double>(l));
-
 
         for (int t = 0; t < 40; t++)
         {
