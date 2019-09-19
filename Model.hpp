@@ -36,39 +36,39 @@ private:
     void alphaPass()
     {
         // initialize alpha
-        C[0] = 0;
+        this->C[0] = 0;
         for (int i = 0; i < n; i++)
         {
-            Alpha[i][0] = Pi[i] * B[i][O[0]];
-            C[0] += Alpha[i][0];
+            this->Alpha[i][0] = this->Pi[i] * this->B[i][O[0]];
+            this->C[0] += this->Alpha[i][0];
         }
 
         // Scale
-        C[0] = 1 / C[0];
+        this->C[0] = 1 / this->C[0];
         for (int i = 0; i < n; i++)
         {
-            Alpha[i][0] *= C[0];
+            this->Alpha[i][0] *= this->C[0];
         }
 
         // finish alpha-pass
         for (int k = 1; k < l; k++)
         {
-            C[k] = 0;
+            this->C[k] = 0;
             for (int i = 0; i < n; i++)
             {
-                Alpha[i][k] = 0;
+                this->Alpha[i][k] = 0;
                 for (int j = 0; j < n; j++)
                 {
-                    Alpha[i][k] += Alpha[j][k - 1] * A[j][i];
+                    this->Alpha[i][k] += this->Alpha[j][k - 1] * A[j][i];
                 }
-                Alpha[i][k] *= B[i][O[k]];
-                C[k] += Alpha[i][k];
+                this->Alpha[i][k] *= this->B[i][O[k]];
+                this->C[k] += this->Alpha[i][k];
             }
             // Scale
-            C[k] = 1 / C[k];
+            this->C[k] = 1 / this->C[k];
             for (int i = 0; i < n; i++)
             {
-                Alpha[i][k] *= C[k];
+                this->Alpha[i][k] *= this->C[k];
             }
         }
     }
@@ -78,7 +78,7 @@ private:
         // usually Beta[i,T-1] = 1 but we scale.
         for (int i = 0; i < n; i++)
         {
-            Beta[i][l - 1] = C[l - 1];
+            this->Beta[i][l - 1] = this->C[l - 1];
         }
 
         // finish beta-pass
@@ -86,11 +86,11 @@ private:
         {
             for (int i = 0; i < n; i++)
             {
-                Beta[i][k] = 0;
+                this->Beta[i][k] = 0;
                 for (int j = 0; j < n; j++)
                 {
                     // Scale w same C as aplha
-                    Beta[i][k] += (A[i][j] * B[j][O[k + 1]] * Beta[j][k + 1]) * C[k];
+                    this->Beta[i][k] += (this->A[i][j] * B[j][O[k + 1]] * this->Beta[j][k + 1]) * this->C[k];
                 }
             }
         }
@@ -101,18 +101,18 @@ private:
         // compute edge case
         for (int i = 0; i < n; i++)
         {
-            Gamma[i][l - 1] = Alpha[i][l - 1];
+            this->Gamma[i][l - 1] = this->Alpha[i][l - 1];
         }
 
         for (int k = 0; k < l - 1; k++)
         {
             for (int i = 0; i < n; i++)
             {
-                Gamma[i][k] = 0;
+                this->Gamma[i][k] = 0;
                 for (int j = 0; j < n; j++)
                 {
-                    diGamma[i][j][k] = Alpha[i][k] * A[i][j] * B[j][O[k + 1]] * Beta[j][k + 1];
-                    Gamma[i][k] += diGamma[i][j][k];
+                    this->diGamma[i][j][k] = this->Alpha[i][k] * this->A[i][j] * this->B[j][O[k + 1]] * this->Beta[j][k + 1];
+                    Gamma[i][k] += this->diGamma[i][j][k];
                 }
             }
         }
@@ -121,11 +121,11 @@ private:
 public:
     Model(int nState, int nEmission)
     {
-        n = nState;
-        m = nEmission;
-        A.resize(n, vector<double>(n));
-        B.resize(n, vector<double>(m));
-        Pi.resize(n);
+        this->n = nState;
+        this->m = nEmission;
+        this->A.resize(n, vector<double>(n));
+        this->B.resize(n, vector<double>(m));
+        this->Pi.resize(n);
 
         double sum;
 
@@ -137,12 +137,12 @@ public:
             {
                 double randDouble = (double)rand() / RAND_MAX;
                 sum += randDouble;
-                A[i][j] = randDouble;
+                this->A[i][j] = randDouble;
             }
             // Normalize
             for (int j = 0; j < nState; j++)
             {
-                A[i][j] /= sum;
+                this->A[i][j] /= sum;
             }
         }
 
@@ -154,12 +154,12 @@ public:
             {
                 double randDouble = (double)rand() / RAND_MAX;
                 sum += randDouble;
-                B[i][j] = randDouble;
+                this->B[i][j] = randDouble;
             }
             // Normalize
             for (int j = 0; j < m; j++)
             {
-                B[i][j] /= sum;
+                this->B[i][j] /= sum;
             }
         }
 
@@ -169,12 +169,12 @@ public:
         {
             double randDouble = (double)rand() / RAND_MAX;
             sum += randDouble;
-            Pi[i] = randDouble;
+            this->Pi[i] = randDouble;
         }
 
         for (int i = 0; i < n; i++)
         {
-            Pi[i] /= sum;
+            this->Pi[i] /= sum;
         }
     }
 
@@ -184,7 +184,7 @@ public:
         vector<double> Alphan(n);
         for (int i = 0; i < n; i++)
         {
-            Alphan[i] = Pi[i] * B[i][pO[0]];
+            Alphan[i] = this->Pi[i] * this->B[i][pO[0]];
         }
 
         vector<double> AlphanTmp(n);
@@ -195,9 +195,9 @@ public:
                 double tmp = 0;
                 for (int j = 0; j < n; j++)
                 {
-                    tmp += Alphan[j] * A[j][i];
+                    tmp += Alphan[j] * this->A[j][i];
                 }
-                AlphanTmp[i] = tmp * B[i][pO[k]];
+                AlphanTmp[i] = tmp * this->B[i][pO[k]];
             }
             for (int i = 0; i < n; i++)
             {
@@ -237,7 +237,7 @@ public:
         vector<double> Delta(n);
         for (int i = 0; i < n; i++)
         {
-            Delta[i] = Pi[i] * B[i][pO[0]];
+            Delta[i] = this->Pi[i] * B[i][pO[0]];
         }
 
         double prob = 0;
@@ -251,7 +251,7 @@ public:
                 argmax = -1;
                 for (int j = 0; j < n; j++)
                 {
-                    prob = abs(log(Delta[j] * A[j][i] * B[i][pO[k]]));
+                    prob = Delta[j] * A[j][i] * B[i][pO[k]];
                     if (max < prob && !isinf(prob)) // NOTE
                     {
                         max = prob;
@@ -279,42 +279,20 @@ public:
             }
         }
         return argmax;
-
-        /* vector<int> path(pO.size());
-        path[l - 1] = argmax;
-        cerr << "s "<< pO.size() << endl;
-        for (int i = l - 1; i > 0; i--)
-        {
-            path[i - 1] = DeltaStates[argmax][i]; // Put most likely previous state in path
-            argmax = DeltaStates[argmax][i];      // Go to most likely previous state
-        }
-
-        return path; */
     }
 
-    tuple<double, int> getNextEmission(int &state)
+    tuple<double, int> getNextEmission(int state) const
     {
         vector<double> emissionProb(m);
-        /* vector<double> stateDist = A[state];
-        for (int i = 0; i < n; i++)
-        {
-            for (int j = 0; j < n; j++)
-            {
-                for (int k = 0; k < m; k++)
-                {
-                    emissionProb[k] += A[j][i] * B[i][k] * stateDist[j];
-                }
-            }
-        } */
 
-        //vector<double> stateDist = A[state];
-        for (int i = 0; i < n; i++)
+        for (int k = 0; k < m; k++)
         {
-            //cerr << "state: " << state << " A.size " << A.size() << endl;
-            for (int k = 0; k < m; k++)
+            for (int i = 0; i < n; i++)
             {
-                //cerr << A[state][i] << " " << B[i][k] << " " << Alpha[state][O.size() - 1] << endl;
-                emissionProb[k] += A[state][i] * B[i][k] * Alpha[state][O.size() - 1];
+                for (int j = 0; j < n; j++)
+                {
+                    emissionProb[k] += A[j][i] * B[i][k] * Alpha[j][O.size() - 1];
+                }
             }
         }
 
@@ -328,7 +306,19 @@ public:
                 emission = k;
             }
         }
+        //cerr << max << endl;
         return make_tuple(max, emission);
+    }
+
+    // Common log scaling.
+    double logScale()
+    {
+        double logP = 0;
+        for (int k = 0; k < m; k++)
+        {
+            logP += log(C[k]);
+        }
+        return -logP;
     }
 
     /**
@@ -339,22 +329,24 @@ public:
         O = pO;
         l = pO.size();
 
-        C.resize(l);
-        Alpha.resize(n, vector<double>(l));
-        Beta.resize(n, vector<double>(l));
-        diGamma.resize(n, vector<vector<double>>(n, vector<double>(l)));
-        Gamma.resize(n, vector<double>(l));
+        this->C.resize(l);
+        this->Alpha.resize(n, vector<double>(l));
+        this->Beta.resize(n, vector<double>(l));
+        this->diGamma.resize(n, vector<vector<double>>(n, vector<double>(l)));
+        this->Gamma.resize(n, vector<double>(l));
 
-        for (int t = 0; t < 40; t++)
+        //double oldProb = '-inf';
+        for (int t = 0; t < 10; t++)
         {
-            alphaPass();
-            betaPass();
-            diGammaPass();
+            this->alphaPass();
+            this->betaPass();
+            this->diGammaPass();
+            double oldProb = logScale();
 
             // estimate initial distribution
             for (int i = 0; i < n; i++)
             {
-                Pi[i] = Gamma[i][0];
+                this->Pi[i] = this->Gamma[i][0];
             }
 
             // estimate transition matrix
@@ -363,16 +355,16 @@ public:
                 double d = 0;
                 for (int k = 0; k < l - 1; k++)
                 {
-                    d += Gamma[i][k];
+                    d += this->Gamma[i][k];
                 }
                 for (int j = 0; j < n; j++)
                 {
                     double num = 0;
                     for (int k = 0; k < l - 1; k++)
                     {
-                        num += diGamma[i][j][k];
+                        num += this->diGamma[i][j][k];
                     }
-                    A[i][j] = num / d;
+                    this->A[i][j] = num / d;
                 }
             }
 
@@ -382,35 +374,39 @@ public:
                 double d = 0;
                 for (int k = 0; k < l; k++)
                 {
-                    d += Gamma[i][k];
+                    d += this->Gamma[i][k];
                 }
                 for (int j = 0; j < m; j++)
                 {
                     double num = 0;
                     for (int k = 0; k < l; k++)
                     {
-                        num += O[k] == j ? Gamma[i][k] : 0;
+                        num += O[k] == j ? this->Gamma[i][k] : 0;
                     }
-                    B[i][j] = num / d;
+                    this->B[i][j] = num / d;
                 }
             }
+            double newPr = logScale();
+            if (newPr < oldProb)
+                break; // break if not improving, could put some threshold aswell
+            oldProb = newPr;
         }
     }
 
     // For debugging
     vector<vector<double>> getTransitionMatrix() const
     {
-        return A;
+        return this->A;
     }
 
     vector<vector<double>> getEmissionMatrix() const
     {
-        return B;
+        return this->B;
     }
 
     vector<double> getInitialDistMatrix() const
     {
-        return Pi;
+        return this->Pi;
     }
 };
 

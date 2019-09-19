@@ -301,13 +301,10 @@ void GameServer::playerShoot(SPlayer &pPlayer)
             if (lSpecies == SPECIES_BLACK_STORK)
             {
                 // Hitting the black stork means disqualification
-                /* pPlayer.mScore = 0;
+                pPlayer.mScore = 0;
                 sendScores(pPlayer);
                 *pPlayer.mOutputStream << "GAMEOVER" << std::endl;
                 removePlayer(pPlayer);
-                return; */
-                *pPlayer.mOutputStream << "HIT_STORK" << std::endl;
-                pPlayer.mScore -= 1;
                 return;
             }
 
