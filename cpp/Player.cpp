@@ -6,19 +6,20 @@
 #include <vector>
 #include <tuple>
 
+using namespace std;
+
 namespace ducks
 {
-int n, m;
+
+int nStates, mEmission;
 vector<vector<vector<Model>>> speciesModels;
 vector<vector<Model>> birdModels;
-vector<ESpecies> specieGuess;
-
-tuple<double, int> action;
+vector<ESpecies> specieGuess(6);
 
 Player::Player()
 {
-    n = 9; // state: type of birds
-    m = 9; // emission: type of moves
+    nStates = 9; // state: type of birds
+    mEmission = 9; // emission: type of moves
     vector<vector<vector<Model>>> mdl(6);
     speciesModels = mdl; // Vector of model for each species
 }
@@ -37,21 +38,14 @@ std::vector<int> getObsSeq(Bird bird)
 
 Action Player::shoot(const GameState &pState, const Deadline &pDue)
 {
-
-    if (pState.getRound() == 0)
-    {
-        speciesModels.clear();
-        vector<vector<vector<Model>>> mdl(6);
-        speciesModels = mdl;
-    }
-
+    
     int nBirds = pState.getNumBirds();
-    int openSeason = 80;
+    int openSeason = 100 - nBirds;
 
     if (pState.getBird(0).getSeqLength() == 1)
     {
         // each bird will have openSeason nr of models.
-        vector<vector<Model>> tmp(nBirds, vector<Model>(20, Model(n, m)));
+        vector<vector<Model>> tmp(nBirds, vector<Model>(20, Model(nStates, mEmission)));
         birdModels = tmp;
         cerr << "Start Round " << pState.getRound() << endl;
     }
@@ -61,19 +55,26 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
     double victimOdds = 0.70;
     int nextBirdMove = -1;
 
+
     for (int b = 0; b < nBirds; b++)
     {
+        
         Bird bird = pState.getBird(b);
+        
+
         int nObs = bird.getSeqLength();
+        
         if (nObs >= openSeason && bird.isAlive())
         {
-            Model model(n, m);
+            
+            Model model(nStates, mEmission);
             vector<int> O = getObsSeq(bird);
-            model.estimate(O);
-
+            
+            vector<vector<double>> Alpha = model.estimate(O);
+            
 
             // Collect models for bird.
-            birdModels[b][nObs-80] = model;
+            birdModels[b][nBirds - 100 + nObs] = model;
 
             if (pState.getRound() > 0)
             {
@@ -117,12 +118,12 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                
                 if (speciesModels[SPECIES_BLACK_STORK].empty() || specie == SPECIES_BLACK_STORK || (maxSpiece[SPECIES_BLACK_STORK] > 0.1))
                 {
-                    return cDontShoot;
+                    continue;
                 }
 
                 int likelyState = model.estimateStateSeq(O);
 
-                action = model.getNextEmission(likelyState);
+                tuple<double, int> action = model.getNextEmission(Alpha);
 
                 if (get<0>(action) >= victimOdds)
                 {
@@ -174,7 +175,9 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
             {
                 for (int k = 0; k < speciesModels[i][j].size(); k++)
                 {
-                    double tmpSpecieMaxP = speciesModels[i][j][speciesModels[i][j].size() - 1].estimateEmissionSequence(O);
+                    
+                    double tmpSpecieMaxP = speciesModels[i][j][k].estimateEmissionSequence(O);
+                    //double tmpSpecieMaxP = 0;
                     //avg += tmpSpecieMaxP;
                     if (specieMaxP <= tmpSpecieMaxP && !isinf(tmpSpecieMaxP))
                     {
