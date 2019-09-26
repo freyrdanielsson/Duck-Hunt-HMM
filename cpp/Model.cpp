@@ -77,11 +77,14 @@ Model::Model(int nState, int nEmission)
 double Model::estimateEmissionSequence(vector<int> &O)
 {
     vector<double> Alpha(n);
+    double test = 0;
     for (int i = 0; i < n; i++)
     {
         //cerr << Pi[i] << " " << B[i][O[0]] << endl;
         Alpha[i] = Pi[i] * B[i][O[0]];
+        test += Alpha[i];
     }
+    cerr << test << endl;
 
     vector<double> AlphaTmp(n);
     for (int k = 1; k < O.size(); k++)
@@ -93,6 +96,7 @@ double Model::estimateEmissionSequence(vector<int> &O)
             {
                 tmp += Alpha[j] * A[j][i];
             }
+            //if (tmp == 0) cerr << "tmp 0 , n" << n  <<endl;
             AlphaTmp[i] = tmp * B[i][O[k]];
         }
         for (int i = 0; i < n; i++)

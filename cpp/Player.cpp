@@ -18,7 +18,7 @@ vector<ESpecies> specieGuess(6);
 
 Player::Player()
 {
-    nStates = 9; // state: type of birds
+    nStates = 9;   // state: type of birds
     mEmission = 9; // emission: type of moves
     vector<vector<vector<Model>>> mdl(6);
     speciesModels = mdl; // Vector of model for each species
@@ -26,11 +26,17 @@ Player::Player()
 
 std::vector<int> getObsSeq(Bird bird)
 {
-    std::vector<int> O(bird.getSeqLength());
-
+    int cnt = 0;
     for (int i = 0; i < bird.getSeqLength(); i++)
     {
-        O[i] = bird.wasAlive(i) ? bird.getObservation(i) : 0; // check later...
+        if (bird.wasAlive(i))
+            cnt++;
+    }
+    std::vector<int> O(cnt);
+
+    for (int i = 0; i < cnt; i++)
+    {
+        O[i] = bird.getObservation(i);
     }
 
     return O;
@@ -38,45 +44,40 @@ std::vector<int> getObsSeq(Bird bird)
 
 Action Player::shoot(const GameState &pState, const Deadline &pDue)
 {
-    
+
     int nBirds = pState.getNumBirds();
     int openSeason = 100 - nBirds;
 
     if (pState.getBird(0).getSeqLength() == 1)
     {
         // each bird will have openSeason nr of models.
-        vector<vector<Model>> tmp(nBirds, vector<Model>(20, Model(nStates, mEmission)));
+        vector<vector<Model>> tmp(nBirds, vector<Model>(nBirds, Model(nStates, mEmission)));
         birdModels = tmp;
         cerr << "Start Round " << pState.getRound() << endl;
     }
 
     // For each bird
     int victim = -1;
-    double victimOdds = 0.70;
+    double victimOdds = 0.75;
     int nextBirdMove = -1;
-
 
     for (int b = 0; b < nBirds; b++)
     {
-        
         Bird bird = pState.getBird(b);
-        
-
         int nObs = bird.getSeqLength();
-        
+
         if (nObs >= openSeason && bird.isAlive())
         {
-            
+
             Model model(nStates, mEmission);
             vector<int> O = getObsSeq(bird);
-            
+
             vector<vector<double>> Alpha = model.estimate(O);
-            
 
             // Collect models for bird.
             birdModels[b][nBirds - 100 + nObs] = model;
 
-            if (pState.getRound() > 0)
+            /* if (pState.getRound() > 0)
             {
                 vector<double> maxSpiece(COUNT_SPECIES);
                 double norm = 0;
@@ -115,7 +116,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                         specie = i;
                     }
                 }
-               
+
                 if (speciesModels[SPECIES_BLACK_STORK].empty() || specie == SPECIES_BLACK_STORK || (maxSpiece[SPECIES_BLACK_STORK] > 0.1))
                 {
                     continue;
@@ -131,13 +132,13 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                     victim = b;
                     nextBirdMove = get<1>(action);
                 }
-            }
+            } */
         }
     }
-    //return cDontShoot;
+    return cDontShoot;
     //std::cerr << "Round: " << pState.getRound() << " action " << EMovement(nextBirdMove) << " victim " << victim <<endl;
 
-    return Action(victim, EMovement(nextBirdMove));
+    //return Action(victim, EMovement(nextBirdMove));
 }
 
 std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDue)
@@ -175,7 +176,7 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
             {
                 for (int k = 0; k < speciesModels[i][j].size(); k++)
                 {
-                    
+
                     double tmpSpecieMaxP = speciesModels[i][j][k].estimateEmissionSequence(O);
                     //double tmpSpecieMaxP = 0;
                     //avg += tmpSpecieMaxP;
@@ -204,12 +205,12 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
             }
         }
 
-        /* cerr << "best " << specie << endl;
+        cerr << "best " << specie << endl;
         for (int i = 0; i < COUNT_SPECIES; i++)
         {
             cerr << maxSpiece[i] << " ";
         }
-        cerr << endl; */
+        cerr << endl;
 
         specieGuess[b] = ESpecies(specie);
     }
