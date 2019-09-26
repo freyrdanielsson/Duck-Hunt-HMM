@@ -18,6 +18,12 @@ class Model
     */
 
 private:
+    std::vector<std::vector<double>> A;
+    std::vector<std::vector<double>> B;
+    std::vector<double> Pi;
+
+    int n, m, l;
+
 
 public:
     Model(int nState, int nEmission);
