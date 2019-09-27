@@ -191,10 +191,10 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
             norm += specieMaxP;
         }
 
-        for (int i = 0; i < COUNT_SPECIES; i++)
+        /* for (int i = 0; i < COUNT_SPECIES; i++)
         {
             maxSpiece[i] /= norm;
-        }
+        } */
 
         for (int i = 0; i < COUNT_SPECIES; i++)
         {
