@@ -84,7 +84,7 @@ double Model::estimateEmissionSequence(vector<int> &O)
         Alpha[i] = Pi[i] * B[i][O[0]];
         test += Alpha[i];
     }
-    cerr << test << endl;
+    //cerr << test << endl;
 
     vector<double> AlphaTmp(n);
     for (int k = 1; k < O.size(); k++)
@@ -96,7 +96,13 @@ double Model::estimateEmissionSequence(vector<int> &O)
             {
                 tmp += Alpha[j] * A[j][i];
             }
-            //if (tmp == 0) cerr << "tmp 0 , n" << n  <<endl;
+            if (tmp == 0) {
+                cerr << "tmp 0 , n" << n  <<endl;
+                for (int j = 0; j < n; j++)
+                {
+                    cerr << Alpha[j] << " " << A[j][i] << endl;
+                }
+            }
             AlphaTmp[i] = tmp * B[i][O[k]];
         }
         for (int i = 0; i < n; i++)
