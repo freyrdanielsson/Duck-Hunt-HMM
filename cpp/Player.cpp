@@ -25,15 +25,6 @@ Player::Player()
 
 std::vector<int> getObsSeq(Bird bird)
 {
-    /* std::vector<int> O(bird.getSeqLength());
-
-    for (int i = 0; i < bird.getSeqLength(); i++)
-    {
-        O[i] = bird.wasAlive(i) ? bird.getObservation(i) : 0; // check later...
-    }
-
-    return O; */
-
     int cnt = 0;
     for (int i = 0; i < bird.getSeqLength(); i++)
     {
@@ -94,7 +85,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                     for (int k = 0; k < speciesModels[SPECIES_BLACK_STORK][j].size(); k++)
                     {
                         double tmpSpecieMaxP = speciesModels[SPECIES_BLACK_STORK][j][k].estimateEmissionSequence(O);
-                        if (tmpSpecieMaxP > 0)
+                        if (tmpSpecieMaxP > 0.00001)
                         {
                             couldBeStork = true;
                             break;
@@ -192,13 +183,6 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
                 specie = i;
             }
         }
-
-        /* cerr << "best " << specie << endl;
-        for (int i = 0; i < COUNT_SPECIES; i++)
-        {
-            cerr << maxSpiece[i] << " ";
-        }
-        cerr << endl; */
 
         specieGuess[b] = ESpecies(specie);
     }
