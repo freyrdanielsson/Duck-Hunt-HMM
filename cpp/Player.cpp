@@ -25,13 +25,26 @@ Player::Player()
 
 std::vector<int> getObsSeq(Bird bird)
 {
-    std::vector<int> O(bird.getSeqLength());
+    /* std::vector<int> O(bird.getSeqLength());
 
     for (int i = 0; i < bird.getSeqLength(); i++)
     {
         O[i] = bird.wasAlive(i) ? bird.getObservation(i) : 0; // check later...
     }
 
+    return O; */
+
+    int cnt = 0;
+    for (int i = 0; i < bird.getSeqLength(); i++)
+    {
+        if (bird.wasAlive(i))
+            cnt++;
+    }
+    std::vector<int> O(cnt);
+    for (int i = 0; i < cnt; i++)
+    {
+        O[i] = bird.getObservation(i);
+    }
     return O;
 }
 
@@ -62,65 +75,36 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
     int nextBirdMove = -1;
     for (int b = 0; b < nBirds; b++)
     {
+        bool couldBeStork = false;
         Bird bird = pState.getBird(b);
         int nObs = bird.getSeqLength();
-        if (nObs > openSeason && bird.isAlive())
+
+        if (nObs > openSeason)
         {
             Model model(n, m);
             vector<int> O = getObsSeq(bird);
             model.estimate(O);
+            birdModels[b][nObs % openSeason] = model;
 
-            // Collect models for bird.
-            birdModels[b][nBirds - 100 + nObs] = model;
-
-            if (pState.getRound() > 0)
+            // If bird is alive try to shoot
+            if (bird.isAlive())
             {
-                /* vector<double> maxSpiece(COUNT_SPECIES);
-                double norm = 0;
-
-                int specie = -1;
-                double bestOfAllS = 0;
-
-                for (int i = 0; i < COUNT_SPECIES; i++)
+                for (int j = 0; j < speciesModels[SPECIES_BLACK_STORK].size(); j++)
                 {
-                    double specieMaxP = 0;
-                    for (int j = 0; j < speciesModels[i].size(); j++)
+                    for (int k = 0; k < speciesModels[SPECIES_BLACK_STORK][j].size(); k++)
                     {
-                        for (int k = 0; k < speciesModels[i][j].size(); k++)
+                        double tmpSpecieMaxP = speciesModels[SPECIES_BLACK_STORK][j][k].estimateEmissionSequence(O);
+                        if (tmpSpecieMaxP > 0)
                         {
-                            double tmpSpecieMaxP = speciesModels[i][j][k].estimateEmissionSequence(O);
-                            if (specieMaxP < tmpSpecieMaxP && !isinf(tmpSpecieMaxP))
-                            {
-                                specieMaxP = tmpSpecieMaxP;
-                            }
+                            couldBeStork = true;
+                            break;
                         }
                     }
-                    maxSpiece[i] = specieMaxP;
-                    norm += specieMaxP;
                 }
 
-                for (int i = 0; i < COUNT_SPECIES; i++)
-                {
-                    maxSpiece[i] /= norm;
-                }
-
-                for (int i = 0; i < COUNT_SPECIES; i++)
-                {
-                    if (bestOfAllS < maxSpiece[i])
-                    {
-                        bestOfAllS = maxSpiece[i];
-                        specie = i;
-                    }
-                }
-                cerr <<  bestOfAllS <<endl;
-                if (specie == SPECIES_BLACK_STORK || (maxSpiece[SPECIES_BLACK_STORK] > 0.2) || (bestOfAllS < 0.24))
-                {
-                    return cDontShoot;
-                } */
-                
+                if (couldBeStork) continue;
 
                 int likelyState = model.estimateStateSeq(O);
-
                 action = model.getNextEmission(likelyState);
 
                 if (get<0>(action) >= victimOdds)
@@ -133,14 +117,6 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         }
     }
 
-    /* if (nextBirdMove >= 0)
-    {
-        cerr << victimOdds << endl;
-    } */
-
-    //return cDontShoot;
-    //std::cerr << "Round: " << pState.getRound() << " action " << EMovement(nextBirdMove) << " victim " << victim <<endl;
-
     return Action(victim, EMovement(nextBirdMove));
 }
 
@@ -152,11 +128,11 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
      */
     specieGuess.resize(pState.getNumBirds(), SPECIES_UNKNOWN);
 
-    if (pState.getRound() == 0 || true)
+    if (pState.getRound() == 0)
     {
         for (int i = 0; i < pState.getNumBirds(); i++)
         {
-            specieGuess[i] = SPECIES_UNKNOWN;
+            specieGuess[i] = ESpecies(rand() % COUNT_SPECIES);
         }
         return specieGuess;
     }
@@ -175,20 +151,30 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
 
         for (int i = 0; i < COUNT_SPECIES; i++)
         {
+            bool timeout = false;
             double specieMaxP = 0;
             for (int j = 0; j < speciesModels[i].size(); j++)
             {
+                if (timeout)
+                    break;
                 for (int k = 0; k < speciesModels[i][j].size(); k++)
                 {
                     double tmpSpecieMaxP = speciesModels[i][j][k].estimateEmissionSequence(O);
-                    //avg += tmpSpecieMaxP;
-                    if (specieMaxP < tmpSpecieMaxP && !isinf(tmpSpecieMaxP))
+                    if (specieMaxP < tmpSpecieMaxP)
                     {
                         specieMaxP = tmpSpecieMaxP;
                     }
                 }
+                if (pDue.remainingMs() < 100)
+                {
+                    for (int k = b; k < pState.getNumBirds(); k++)
+                    {
+                        specieGuess[k] = ESpecies(rand() % COUNT_SPECIES);
+                    }
+                    cerr << "TIMEOUT TIMEOUT" << endl;
+                    return specieGuess;
+                }
             }
-            //avgL[i] = avg / COUNT_SPECIES;
             maxSpiece[i] = specieMaxP;
             norm += specieMaxP;
         }
@@ -216,6 +202,7 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
 
         specieGuess[b] = ESpecies(specie);
     }
+    cerr << pDue.remainingMs() << endl;
     return specieGuess;
 }
 
